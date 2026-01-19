@@ -1,0 +1,6 @@
+@daloy_api_HostAddress = http://localhost:5133
+
+GET {{daloy_api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
