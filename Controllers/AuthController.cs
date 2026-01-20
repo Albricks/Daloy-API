@@ -6,6 +6,7 @@ using daloy_api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace daloy_api.Controllers;
@@ -65,14 +66,14 @@ public class AuthController : ControllerBase
             });
         }
 
-        return Ok(ApiResponse<object>.Ok(null, "Registration successful"));
+        return Ok(ApiResponse<object>.Ok("Registration successful"));
     }
 
     // --------------------
     // LOGIN
     // --------------------
     [HttpPost("login")]
-    public async Task<ActionResult<ApiResponse<AuthResponse>>> Login(LoginRequest request)
+    public async Task<ActionResult<ApiResponse<AuthResponse>>> Login(LoginRequest request)  
     {
         var user = await _userManager.FindByEmailAsync(request.Email.ToLower());
         if (user == null)
@@ -112,24 +113,24 @@ public class AuthController : ControllerBase
 
     [Authorize]
     [HttpGet("me")]
-    public async Task<IActionResult> Me()
+    public async Task<ActionResult<MeDto>> Me()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
 
         var user = await _userManager.FindByIdAsync(userId);
-
         if (user == null)
             return Unauthorized();
 
-        return Ok(new
+        return Ok(new MeDto
         {
-            user.Id,
-            user.Email,
-            user.UserName,
-            user.FullName,
-            user.BirthDate
+            Id = user.Id,
+            UserName = user.UserName!,
+            Email = user.Email!
         });
     }
+
 
     [HttpPost("refresh")]
     public async Task<ActionResult<ApiResponse<AuthResponse>>> Refresh(RefreshRequest request)

@@ -18,10 +18,14 @@ public class TokenService : ITokenService
     public string CreateToken(AppUser user)
     {
         var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.UserName!)
-        };
+    {
+        // JWT standard
+        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+        new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+
+        // Display / Identity
+        new Claim(ClaimTypes.Name, user.UserName!)
+    };
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
