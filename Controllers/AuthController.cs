@@ -18,43 +18,59 @@ public class AuthController : ControllerBase
     private readonly UserManager<AppUser> _userManager;
     private readonly SignInManager<AppUser> _signInManager;
     private readonly ITokenService _tokenService;
+    private readonly BlobStorageService _blobService;
 
     public AuthController(
         UserManager<AppUser> userManager,
         SignInManager<AppUser> signInManager,
-        ITokenService tokenService
+        ITokenService tokenService,
+        BlobStorageService blobService
+
     )
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
+        _blobService = blobService;
     }
 
     // --------------------
     // REGISTER
     // --------------------
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterRequest request)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> Register(
+    [FromForm] RegisterRequest request)
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<object>.Fail("Invalid registration data."));
+            return BadRequest(
+                ApiResponse<object>.Fail("Invalid registration data."));
         }
+
+        var userId = Guid.NewGuid();
 
         var user = new AppUser
         {
+            Id = userId, // 👈 IMPORTANT
             Email = request.Email.ToLower(),
             UserName = request.Username.ToLower(),
             FullName = request.FullName,
-            BirthDate = request.BirthDate,
-            AvatarUrl = request.AvatarUrl
+            BirthDate = request.BirthDate
         };
 
-        var result = await _userManager.CreateAsync(user, request.Password);
+        // Upload avatar BEFORE creating user
+        if (request.Avatar != null)
+        {
+            user.AvatarBlobName = await _blobService
+                .UploadAvatarAsync(request.Avatar, userId.ToString());
+        }
+
+        var result = await _userManager
+            .CreateAsync(user, request.Password);
 
         if (!result.Succeeded)
         {
-            // Collect Identity error messages
             var errors = result.Errors
                 .Select(e => e.Description)
                 .ToList();
@@ -67,7 +83,17 @@ public class AuthController : ControllerBase
             });
         }
 
-        return Ok(ApiResponse<object>.Ok("Registration successful"));
+        // Generate SAS URL (optional)
+        string? avatarUrl = user.AvatarBlobName != null
+            ? _blobService.GetAvatarSasUrl(user.AvatarBlobName)
+            : null;
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            Message = "Registration successful",
+            UserId = user.Id,
+            AvatarUrl = avatarUrl
+        }));
     }
 
     // --------------------
@@ -125,12 +151,20 @@ public class AuthController : ControllerBase
         if (user == null)
             return Unauthorized();
 
+        // 👇 Generate SAS only if avatar exists
+        string? avatarUrl = null;
+        if (!string.IsNullOrEmpty(user.AvatarBlobName))
+        {
+            avatarUrl = _blobService
+                .GetAvatarSasUrl(user.AvatarBlobName);
+        }
+
         return Ok(new MeDto
         {
             Id = user.Id,
             UserName = user.UserName!,
             Email = user.Email!,
-            AvatarUrl = user.AvatarUrl
+            AvatarUrl = avatarUrl // 👈 NEW
         });
     }
 
@@ -173,5 +207,18 @@ public class AuthController : ControllerBase
         }));
     }
 
+    [HttpPost("blob-test")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> BlobTest(
+    IFormFile file)
+    {
+        var blobName = await _blobService
+            .UploadAvatarAsync(file, "test-user");
+
+        var sasUrl = _blobService
+            .GetAvatarSasUrl(blobName);
+
+        return Ok(sasUrl);
+    }
 
 }

@@ -71,6 +71,7 @@ builder.Services.AddCors(options =>
 // SERVICES
 // --------------------
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddSingleton<BlobStorageService>();
 
 // --------------------
 // CONTROLLERS & SWAGGER
