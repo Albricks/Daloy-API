@@ -7,4 +7,5 @@ public class RegisterRequest
     public string Username { get; set; } = default!;
     public string FullName { get; set; } = default!;
     public DateTime BirthDate { get; set; }
+    public string? AvatarUrl { get; set; }
 }

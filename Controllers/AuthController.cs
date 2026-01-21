@@ -46,7 +46,8 @@ public class AuthController : ControllerBase
             Email = request.Email.ToLower(),
             UserName = request.Username.ToLower(),
             FullName = request.FullName,
-            BirthDate = request.BirthDate
+            BirthDate = request.BirthDate,
+            AvatarUrl = request.AvatarUrl
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -115,7 +116,8 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<ActionResult<MeDto>> Me()
     {
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
 
@@ -127,7 +129,8 @@ public class AuthController : ControllerBase
         {
             Id = user.Id,
             UserName = user.UserName!,
-            Email = user.Email!
+            Email = user.Email!,
+            AvatarUrl = user.AvatarUrl
         });
     }
 
