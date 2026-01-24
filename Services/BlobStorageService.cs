@@ -22,17 +22,18 @@ namespace daloy_api.Services
         /// Uploads or replaces a user's avatar
         /// </summary>
         public async Task<string> UploadAvatarAsync(
-            IFormFile file,
-            string userId)
+            Guid userId,
+            IFormFile file)
         {
             var extension = Path.GetExtension(file.FileName);
             var blobName = $"{userId}{extension}";
+
             var blobClient = _container.GetBlobClient(blobName);
 
             await using var stream = file.OpenReadStream();
             await blobClient.UploadAsync(stream, overwrite: true);
 
-            return blobName; // store this in DB
+            return blobName;
         }
 
         /// <summary>
@@ -54,5 +55,6 @@ namespace daloy_api.Services
 
             return blobClient.GenerateSasUri(sasBuilder).ToString();
         }
+
     }
 }

@@ -1,4 +1,4 @@
-using daloy_api.Models;
+﻿using daloy_api.Models;
 using daloy_api.Services;
 using daloy_api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Azure.Storage.Blobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +17,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 // --------------------
-// IDENTITY
+// IDENTITY (USER MANAGEMENT ONLY)
 // --------------------
 builder.Services
     .AddIdentity<AppUser, IdentityRole<Guid>>(options =>
@@ -28,14 +29,10 @@ builder.Services
     .AddDefaultTokenProviders();
 
 // --------------------
-// JWT AUTHENTICATION (EXPLICIT & SAFE)
+// JWT AUTHENTICATION (JWT-ONLY FOR APIs - NO COOKIE CHALLENGES)
 // --------------------
 builder.Services
-    .AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -51,6 +48,17 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
             )
+        };
+
+        // 🔴 CRITICAL: Never redirect on API auth failures
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -68,10 +76,22 @@ builder.Services.AddCors(options =>
 });
 
 // --------------------
+// AZURE BLOB STORAGE
+// --------------------
+var blobConnString = builder.Configuration
+    .GetSection("AzureBlob")["ConnectionString"];
+
+if (string.IsNullOrEmpty(blobConnString))
+    throw new Exception("AzureBlob:ConnectionString is not configured.");
+
+builder.Services.AddSingleton(new BlobServiceClient(blobConnString));
+
+// --------------------
 // SERVICES
 // --------------------
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddSingleton<BlobStorageService>();
+builder.Services.AddScoped<IAvatarService, AvatarService>();
+builder.Services.AddScoped<IVideoService, VideoService>();
 
 // --------------------
 // CONTROLLERS & SWAGGER

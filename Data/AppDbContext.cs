@@ -8,4 +8,6 @@ public class AppDbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options) { }
+    public DbSet<Video> Videos => Set<Video>();
+    public DbSet<UserVideoProgress> UserVideoProgresses => Set<UserVideoProgress>();
 }

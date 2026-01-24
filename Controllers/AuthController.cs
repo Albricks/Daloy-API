@@ -3,6 +3,7 @@ using daloy_api.Models;
 using daloy_api.Responses;
 using daloy_api.Services;
 using daloy_api.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,23 +16,23 @@ namespace daloy_api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private readonly IAvatarService _avatarService;
     private readonly UserManager<AppUser> _userManager;
     private readonly SignInManager<AppUser> _signInManager;
     private readonly ITokenService _tokenService;
-    private readonly BlobStorageService _blobService;
 
     public AuthController(
+        IAvatarService avatarService,
         UserManager<AppUser> userManager,
         SignInManager<AppUser> signInManager,
-        ITokenService tokenService,
-        BlobStorageService blobService
+        ITokenService tokenService
 
     )
     {
+        _avatarService = avatarService;
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
-        _blobService = blobService;
     }
 
     // --------------------
@@ -62,8 +63,10 @@ public class AuthController : ControllerBase
         // Upload avatar BEFORE creating user
         if (request.Avatar != null)
         {
-            user.AvatarBlobName = await _blobService
-                .UploadAvatarAsync(request.Avatar, userId.ToString());
+            _avatarService.ValidateAvatar(request.Avatar);
+
+            user.AvatarBlobName = await _avatarService
+                .UploadAvatarAsync(request.Avatar, user.Id.ToString());
         }
 
         var result = await _userManager
@@ -85,7 +88,7 @@ public class AuthController : ControllerBase
 
         // Generate SAS URL (optional)
         string? avatarUrl = user.AvatarBlobName != null
-            ? _blobService.GetAvatarSasUrl(user.AvatarBlobName)
+            ? _avatarService.GetAvatarSasUrl(user.AvatarBlobName)
             : null;
 
         return Ok(ApiResponse<object>.Ok(new
@@ -138,7 +141,7 @@ public class AuthController : ControllerBase
         }));
     }
 
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [HttpGet("me")]
     public async Task<ActionResult<MeDto>> Me()
     {
@@ -151,12 +154,11 @@ public class AuthController : ControllerBase
         if (user == null)
             return Unauthorized();
 
-        // 👇 Generate SAS only if avatar exists
         string? avatarUrl = null;
+
         if (!string.IsNullOrEmpty(user.AvatarBlobName))
         {
-            avatarUrl = _blobService
-                .GetAvatarSasUrl(user.AvatarBlobName);
+            avatarUrl = _avatarService.GetAvatarSasUrl(user.AvatarBlobName);
         }
 
         return Ok(new MeDto
@@ -164,7 +166,9 @@ public class AuthController : ControllerBase
             Id = user.Id,
             UserName = user.UserName!,
             Email = user.Email!,
-            AvatarUrl = avatarUrl // 👈 NEW
+            FullName = user.FullName,
+            BirthDate = user.BirthDate,
+            AvatarUrl = avatarUrl
         });
     }
 
@@ -207,18 +211,5 @@ public class AuthController : ControllerBase
         }));
     }
 
-    [HttpPost("blob-test")]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> BlobTest(
-    IFormFile file)
-    {
-        var blobName = await _blobService
-            .UploadAvatarAsync(file, "test-user");
-
-        var sasUrl = _blobService
-            .GetAvatarSasUrl(blobName);
-
-        return Ok(sasUrl);
-    }
 
 }
