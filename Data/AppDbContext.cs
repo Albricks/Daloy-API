@@ -10,4 +10,5 @@ public class AppDbContext
         : base(options) { }
     public DbSet<Video> Videos => Set<Video>();
     public DbSet<UserVideoProgress> UserVideoProgresses => Set<UserVideoProgress>();
+    public DbSet<LearningModule> LearningModules { get; set; }
 }

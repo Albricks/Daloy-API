@@ -9,11 +9,11 @@ namespace daloy_api.Models
 
 
         public string Title { get; set; } = null!;
-        public string Description { get; set; } = null!;
+        public string Description { get; set; } = default!;
 
 
         public string BlobName { get; set; } = null!;
-
+        public string? ThumbnailBlobName { get; set; }
 
         public Guid LearningModuleId { get; set; }
 

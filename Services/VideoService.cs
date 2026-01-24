@@ -41,10 +41,49 @@ namespace daloy_api.Services
 
         public string GetThumbnailUrl(string blobName)
         {
-            var safe = WebUtility.UrlEncode(blobName);
-            return $"https://via.placeholder.com/320x180.png?text=Thumbnail+for+{safe}";
+            if (string.IsNullOrWhiteSpace(blobName))
+                throw new ArgumentException("Thumbnail blobName is required", nameof(blobName));
 
+
+            var container = _blobServiceClient
+            .GetBlobContainerClient(_videoContainer);
+
+
+            var blob = container.GetBlobClient(blobName);
+
+
+            return GenerateSas(blob, BlobSasPermissions.Read, TimeSpan.FromHours(1));
         }
 
+
+        private string GenerateSas(
+                                    BlobClient blob,
+                                    BlobSasPermissions permissions,
+                                    TimeSpan lifetime)
+        {
+            if (!blob.CanGenerateSasUri)
+            {
+                throw new InvalidOperationException(
+                "BlobClient cannot generate SAS URI. Check credentials.");
+            }
+
+
+            var sasBuilder = new BlobSasBuilder
+            {
+                BlobContainerName = blob.BlobContainerName,
+                BlobName = blob.Name,
+                Resource = "b", // blob
+                ExpiresOn = DateTimeOffset.UtcNow.Add(lifetime)
+            };
+
+
+            sasBuilder.SetPermissions(permissions);
+
+
+            var sasUri = blob.GenerateSasUri(sasBuilder);
+
+
+            return sasUri.ToString();
+        }
     }
 }

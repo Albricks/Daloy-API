@@ -7,6 +7,7 @@
 
         public string Title { get; set; } = default!;
 
+        public string Description { get; set; } = default!;
 
         // ISO 8601 duration or formatted string — pick ONE
         // Option A (better for logic):

@@ -80,21 +80,18 @@ public class VideosController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var videos = await _db.Videos
-        .OrderBy(v => v.LearningModuleId)
-        .ThenBy(v => v.Order)
-        .ToListAsync();
-
+            .OrderBy(v => v.LearningModuleId)
+            .ThenBy(v => v.Order)
+            .ToListAsync();
 
         var result = videos.Select(v => new
         {
             Id = v.Id,
             Title = v.Title,
 
-
             Duration = v.Duration.HasValue
-        ? v.Duration.Value.ToString(@"mm\:ss")
-        : "00:00",
-
+                ? v.Duration.Value.ToString(@"mm\:ss")
+                : "00:00",
 
             Status = v.Status switch
             {
@@ -104,14 +101,11 @@ public class VideosController : ControllerBase
                 _ => "not-started"
             },
 
-
-            ThumbnailUrl = _videoService.GetThumbnailUrl(v.BlobName), // or temp v.BlobName
-
+            ThumbnailUrl = !string.IsNullOrWhiteSpace(v.ThumbnailBlobName) ? _videoService.GetThumbnailUrl(v.ThumbnailBlobName) : _videoService.GetThumbnailUrl("modules/shared/thumbnails/default.jpg"),
 
             ModuleId = v.LearningModuleId,
             Order = v.Order
         });
-
 
         return Ok(result);
     }
