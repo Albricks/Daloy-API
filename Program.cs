@@ -17,7 +17,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 // --------------------
-// IDENTITY (USER MANAGEMENT ONLY)
+// IDENTITY (USER MANAGEMENT ONLY - NO MVC LOGIN REDIRECTS)
 // --------------------
 builder.Services
     .AddIdentity<AppUser, IdentityRole<Guid>>(options =>
@@ -28,11 +28,32 @@ builder.Services
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+// 🔴 CRITICAL: Stop Identity from redirecting to /Account/Login
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
 // --------------------
-// JWT AUTHENTICATION (JWT-ONLY FOR APIs - NO COOKIE CHALLENGES)
+// JWT AUTHENTICATION (JWT-ONLY FOR APIs)
 // --------------------
 builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddAuthentication(options =>
+    {
+        // 🔥 Force JWT as default for everything
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters

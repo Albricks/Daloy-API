@@ -27,4 +27,17 @@ public class AppDbContext
 
     public DbSet<ModuleQuizChoice> QuizChoices { get; set; }
 
+    public DbSet<BudgetDiaryEntry> BudgetDiaryEntries { get; set; }
+
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+
+        modelBuilder.Entity<BudgetDiaryEntry>()
+        .HasIndex(e => new { e.UserId, e.EntryDate })
+        .IsUnique();
+    }
+
 }
