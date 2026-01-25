@@ -22,7 +22,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Content\Modules\" />
 	  <Folder Include="Content\Diary\" />
 	</ItemGroup>
 

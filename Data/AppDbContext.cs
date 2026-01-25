@@ -8,7 +8,23 @@ public class AppDbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options) { }
+
+    // Existing video stuff
     public DbSet<Video> Videos => Set<Video>();
     public DbSet<UserVideoProgress> UserVideoProgresses => Set<UserVideoProgress>();
+
+    // LMS / Modules
+    public DbSet<Module> Modules { get; set; }
+    public DbSet<ModuleObjective> ModuleObjectives { get; set; }
+    public DbSet<Lesson> Lessons { get; set; }
+
+    // 🔴 FIXED TYPO HERE
+    public DbSet<UserModuleProgress> UserModuleProgresses { get; set; }
     public DbSet<LearningModule> LearningModules { get; set; }
+    public DbSet<AppUser> AppUsers { get; set; }
+    public DbSet<ModuleQuiz> ModuleQuizzes { get; set; }
+    public DbSet<ModuleQuizQuestion> QuizQuestions { get; set; }
+
+    public DbSet<ModuleQuizChoice> QuizChoices { get; set; }
+
 }

@@ -69,7 +69,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
+        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -85,6 +85,7 @@ if (string.IsNullOrEmpty(blobConnString))
     throw new Exception("AzureBlob:ConnectionString is not configured.");
 
 builder.Services.AddSingleton(new BlobServiceClient(blobConnString));
+builder.Services.AddSingleton<BlobStorageService>();
 
 // --------------------
 // SERVICES
