@@ -90,9 +90,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+        "http://localhost:4200",
+        "https://localhost:4200",
+        "https://daloy.us",
+        "https://www.daloy.us"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
 
