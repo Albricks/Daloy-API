@@ -10,7 +10,6 @@
         public decimal Budget { get; set; }
         public decimal Spent { get; set; }
 
-        // ✅ NEW: Persisted Saved
         public decimal Saved { get; set; }
 
         public string? Notes { get; set; }

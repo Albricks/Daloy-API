@@ -44,6 +44,7 @@ namespace daloy_api.Controllers
                     Date = e.EntryDate.ToString("yyyy-MM-dd"),
                     Budget = e.Budget,
                     Spent = e.Spent,
+                    Saved = e.Budget - e.Spent,
                     Notes = e.Notes,
                     CreatedAt = e.CreatedAt,
                     UpdatedAt = e.UpdatedAt
@@ -74,6 +75,7 @@ namespace daloy_api.Controllers
                 // UPDATE
                 existing.Budget = request.Budget;
                 existing.Spent = request.Spent;
+                existing.Saved = request.Budget - request.Spent;
                 existing.Notes = request.Notes;
                 existing.UpdatedAt = DateTime.UtcNow;
 
@@ -85,6 +87,7 @@ namespace daloy_api.Controllers
                     Date = existing.EntryDate.ToString("yyyy-MM-dd"),
                     Budget = existing.Budget,
                     Spent = existing.Spent,
+                    Saved = existing.Budget - existing.Spent,
                     Notes = existing.Notes,
                     CreatedAt = existing.CreatedAt,
                     UpdatedAt = existing.UpdatedAt
@@ -99,6 +102,7 @@ namespace daloy_api.Controllers
                 EntryDate = entryDate,
                 Budget = request.Budget,
                 Spent = request.Spent,
+                Saved = request.Budget - request.Spent,
                 Notes = request.Notes,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -113,6 +117,7 @@ namespace daloy_api.Controllers
                 Date = created.EntryDate.ToString("yyyy-MM-dd"),
                 Budget = created.Budget,
                 Spent = created.Spent,
+                Saved = created.Budget - created.Spent,
                 Notes = created.Notes,
                 CreatedAt = created.CreatedAt,
                 UpdatedAt = created.UpdatedAt
@@ -166,7 +171,7 @@ namespace daloy_api.Controllers
                 {
                     TotalBudget = g.Sum(x => x.Budget),
                     TotalSpent = g.Sum(x => x.Spent),
-                    TotalSaved = g.Sum(x => x.Saved),
+                    TotalSaved = g.Sum(x => x.Budget - x.Spent),
                     EntryCount = g.Count()
                 })
                 .FirstOrDefaultAsync()
@@ -199,7 +204,7 @@ namespace daloy_api.Controllers
                 {
                     TotalBudget = g.Sum(x => x.Budget),
                     TotalSpent = g.Sum(x => x.Spent),
-                    TotalSaved = g.Sum(x => x.Saved),
+                    TotalSaved = g.Sum(x => x.Budget - x.Spent),
                     EntryCount = g.Count()
                 })
                 .FirstOrDefaultAsync()
