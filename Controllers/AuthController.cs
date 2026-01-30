@@ -41,7 +41,7 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Register(
-    [FromForm] RegisterRequest request)
+     [FromForm] RegisterRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -86,7 +86,8 @@ public class AuthController : ControllerBase
             });
         }
 
-        // Generate SAS URL (optional)
+        await _userManager.AddToRoleAsync(user, "Learner");
+
         string? avatarUrl = user.AvatarBlobName != null
             ? _avatarService.GetAvatarSasUrl(user.AvatarBlobName)
             : null;
@@ -98,6 +99,7 @@ public class AuthController : ControllerBase
             AvatarUrl = avatarUrl
         }));
     }
+
 
     // --------------------
     // LOGIN
@@ -118,7 +120,7 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return Unauthorized(ApiResponse<AuthResponse>.Fail("Invalid credentials"));
 
-        var accessToken = _tokenService.CreateToken(user);
+        var accessToken = await _tokenService.CreateTokenAsync(user);
         var refreshToken = _tokenService.GenerateRefreshToken();
 
         user.RefreshToken = refreshToken;
@@ -190,7 +192,7 @@ public class AuthController : ControllerBase
             return Unauthorized(ApiResponse<AuthResponse>.Fail("Invalid refresh token"));
         }
 
-        var newAccessToken = _tokenService.CreateToken(user);
+        var newAccessToken = await _tokenService.CreateTokenAsync(user);
         var newRefreshToken = _tokenService.GenerateRefreshToken();
 
         user.RefreshToken = newRefreshToken;

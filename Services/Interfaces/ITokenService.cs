@@ -5,7 +5,7 @@ namespace daloy_api.Services.Interfaces
 {
     public interface ITokenService
     {
-        string CreateToken(AppUser user);
+        Task<string> CreateTokenAsync(AppUser user);   // 👈 async for roles
         string GenerateRefreshToken();
         ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
     }

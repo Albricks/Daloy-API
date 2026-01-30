@@ -1,5 +1,6 @@
 ﻿using daloy_api.Models;
 using daloy_api.Services.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -9,23 +10,35 @@ using System.Text;
 public class TokenService : ITokenService
 {
     private readonly IConfiguration _config;
+    private readonly UserManager<AppUser> _userManager;
 
-    public TokenService(IConfiguration config)
+    public TokenService(
+        IConfiguration config,
+        UserManager<AppUser> userManager)
     {
         _config = config;
+        _userManager = userManager;
     }
 
-    public string CreateToken(AppUser user)
+    // 🔴 Now ASYNC because we fetch roles
+    public async Task<string> CreateTokenAsync(AppUser user)
     {
         var claims = new List<Claim>
-    {
-        // JWT standard
-        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-        new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+        {
+            // JWT standard
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
 
-        // Display / Identity
-        new Claim(ClaimTypes.Name, user.UserName!)
-    };
+            // Display / Identity
+            new Claim(ClaimTypes.Name, user.UserName!)
+        };
+
+        // 👇 STEP 4: Add role claims
+        var roles = await _userManager.GetRolesAsync(user);
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
@@ -79,7 +92,6 @@ public class TokenService : ITokenService
 
         return principal;
     }
-
 
     public string GenerateRefreshToken()
     {

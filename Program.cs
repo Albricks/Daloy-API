@@ -1,4 +1,6 @@
-﻿using daloy_api.Models;
+﻿using Azure.Storage.Blobs;
+using daloy_api.Data;
+using daloy_api.Models;
 using daloy_api.Services;
 using daloy_api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -6,7 +8,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Azure.Storage.Blobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -155,7 +156,11 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
-
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    await RoleSeeder.SeedAsync(services);
+}
 // --------------------
 // MIDDLEWARE
 // --------------------

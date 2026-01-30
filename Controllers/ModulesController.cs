@@ -37,7 +37,7 @@ namespace daloy_api.Controllers
                         .Select(p => p.Status.ToString())
                         .FirstOrDefault() ?? "New",
 
-                    Progress = _db.UserModuleProgresses
+                    Progress = (int)_db.UserModuleProgresses
                         .Where(p => p.ModuleId == m.Id && p.UserId == userId)
                         .Select(p => p.ProgressPercent)
                         .FirstOrDefault()
