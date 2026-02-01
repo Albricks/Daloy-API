@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 // --------------------
-// IDENTITY (USER MANAGEMENT ONLY - NO MVC LOGIN REDIRECTS)
+// IDENTITY
 // --------------------
 builder.Services
     .AddIdentity<AppUser, IdentityRole<Guid>>(options =>
@@ -29,7 +30,6 @@ builder.Services
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-// 🔴 CRITICAL: Stop Identity from redirecting to /Account/Login
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Events.OnRedirectToLogin = context =>
@@ -46,12 +46,11 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // --------------------
-// JWT AUTHENTICATION (JWT-ONLY FOR APIs)
+// JWT AUTHENTICATION
 // --------------------
 builder.Services
     .AddAuthentication(options =>
     {
-        // 🔥 Force JWT as default for everything
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     })
@@ -72,9 +71,17 @@ builder.Services
             )
         };
 
-        // 🔴 CRITICAL: Never redirect on API auth failures
+        // ✅ Do NOT block OPTIONS (CORS preflight)
         options.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Method == HttpMethods.Options)
+                {
+                    context.NoResult();
+                }
+                return Task.CompletedTask;
+            },
             OnChallenge = context =>
             {
                 context.HandleResponse();
@@ -91,14 +98,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins(
-        "http://localhost:4200",
-        "https://localhost:4200",
-        "https://daloy.us",
-        "https://www.daloy.us"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
+        policy
+            .WithOrigins(
+                "http://localhost:4200",
+                "https://localhost:4200",
+                "https://daloy.us",
+                "https://www.daloy.us"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
@@ -120,6 +128,8 @@ builder.Services.AddSingleton<BlobStorageService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAvatarService, AvatarService>();
 builder.Services.AddScoped<IVideoService, VideoService>();
+builder.Services.AddScoped<IVideoProgressService, VideoProgressService>();
+builder.Services.AddScoped<IProgressService, ProgressService>();
 
 // --------------------
 // CONTROLLERS & SWAGGER
@@ -129,24 +139,24 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Type = SecuritySchemeType.Http,
         Scheme = "Bearer",
         BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        In = ParameterLocation.Header,
         Description = "Enter: Bearer {your JWT token}"
     });
 
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                Reference = new OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 }
             },
@@ -156,23 +166,20 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    await RoleSeeder.SeedAsync(services);
-}
+
 // --------------------
-// MIDDLEWARE
+// MIDDLEWARE (ORDER MATTERS)
 // --------------------
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+// ✅ CORS MUST be BEFORE auth
 app.UseCors("AllowAngular");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.Run();

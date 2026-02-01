@@ -24,16 +24,19 @@ public class TokenService : ITokenService
     public async Task<string> CreateTokenAsync(AppUser user)
     {
         var claims = new List<Claim>
-        {
-            // JWT standard
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+    {
+        // 🔑 REQUIRED for ASP.NET authorization
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
 
-            // Display / Identity
-            new Claim(ClaimTypes.Name, user.UserName!)
-        };
+        // Standard JWT claims
+        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+        new Claim(JwtRegisteredClaimNames.Email, user.Email!),
 
-        // 👇 STEP 4: Add role claims
+        // Display
+        new Claim(ClaimTypes.Name, user.UserName!)
+    };
+
+        // Roles
         var roles = await _userManager.GetRolesAsync(user);
         foreach (var role in roles)
         {
@@ -58,6 +61,7 @@ public class TokenService : ITokenService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
 
     public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
     {

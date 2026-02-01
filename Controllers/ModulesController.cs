@@ -24,6 +24,7 @@ namespace daloy_api.Controllers
             var userId = /* get from auth context later */ Guid.Empty;
 
             var modules = await _db.Modules
+                .OrderBy(m => m.Order)
                 .Select(m => new ModuleListDto
                 {
                     Id = m.Id,
@@ -31,6 +32,7 @@ namespace daloy_api.Controllers
                     Description = m.Description,
                     Level = m.Level,
                     Duration = m.DurationMinutes + " mins",
+                    Order = m.Order,
 
                     Status = _db.UserModuleProgresses
                         .Where(p => p.ModuleId == m.Id && p.UserId == userId)
@@ -54,7 +56,7 @@ namespace daloy_api.Controllers
             var userId = /* get from auth context later */ Guid.Empty;
 
             var module = await _db.Modules
-                .Where(m => m.Id == id)
+                .OrderBy(m => m.Order)
                 .Select(m => new ModulePreviewDto
                 {
                     Id = m.Id,

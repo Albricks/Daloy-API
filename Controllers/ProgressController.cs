@@ -20,7 +20,7 @@ namespace daloy_api.Controllers
             _progressService = progressService;
         }
 
-        [HttpPost("lesson")]
+        [HttpPost("lesson-progress")]
         public async Task<IActionResult> UpdateLessonProgress(UpdateLessonProgressDto dto)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -28,7 +28,7 @@ namespace daloy_api.Controllers
             return Ok();
         }
 
-        [HttpPost("quiz")]
+        [HttpPost("quiz-attempt")]
         public async Task<IActionResult> SubmitQuizAttempt(SubmitQuizAttemptDto dto)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

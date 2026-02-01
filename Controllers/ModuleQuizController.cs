@@ -42,6 +42,7 @@ public class ModuleQuizController : ControllerBase
                     QuestionText = q.QuestionText,
                     Order = q.Order,
                     Choices = q.Choices
+                        .OrderBy(c =>c.ChoiceLabel)
                         .Select(c => new QuizChoiceDto
                         {
                             ChoiceId = c.Id,

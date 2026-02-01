@@ -9,41 +9,60 @@ public class AppDbContext
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options) { }
 
-    // Existing video stuff
-    public DbSet<Video> Videos => Set<Video>();
-    public DbSet<UserVideoProgress> UserVideoProgresses => Set<UserVideoProgress>();
-
-    public DbSet<Module> Modules { get; set; }
-    public DbSet<ModuleObjective> ModuleObjectives { get; set; }
-    public DbSet<Lesson> Lessons { get; set; }
-
-    public DbSet<UserModuleProgress> UserModuleProgresses => Set<UserModuleProgress>();
-    public DbSet<UserLessonProgress> UserLessonProgresses => Set<UserLessonProgress>();
-    public DbSet<UserQuizAttempt> UserQuizAttempts { get; set; }
+    // Video learning
     public DbSet<LearningModule> LearningModules { get; set; }
-    public DbSet<AppUser> AppUsers { get; set; }
+    public DbSet<Video> Videos { get; set; }
+    public DbSet<UserVideoProgress> UserVideoProgresses { get; set; }
+
+    // Lesson-based modules
+    public DbSet<Module> Modules { get; set; }
+    public DbSet<Lesson> Lessons { get; set; }
+    public DbSet<UserModuleProgress> UserModuleProgresses { get; set; }
+    public DbSet<UserLessonProgress> UserLessonProgresses { get; set; }
+
+    // Quizzes
     public DbSet<ModuleQuiz> ModuleQuizzes { get; set; }
     public DbSet<ModuleQuizQuestion> ModuleQuizQuestions { get; set; }
-
     public DbSet<ModuleQuizChoice> ModuleQuizChoices { get; set; }
+    public DbSet<UserQuizAttempt> UserQuizAttempts { get; set; }
 
+    // Other
+    public DbSet<ModuleObjective> ModuleObjectives { get; set; }
     public DbSet<BudgetDiaryEntry> BudgetDiaryEntries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
+        // ----------------------------
+        // Explicit table mappings
+        // ----------------------------
+        modelBuilder.Entity<UserModuleProgress>()
+            .ToTable("UserModuleProgress");
+
+        modelBuilder.Entity<UserLessonProgress>()
+            .ToTable("UserLessonProgress");
+
+        modelBuilder.Entity<UserVideoProgress>()
+            .ToTable("UserVideoProgress");
+
+        modelBuilder.Entity<UserQuizAttempt>()
+            .ToTable("UserQuizAttempts");
+
+        // ----------------------------
+        // Indexes & constraints
+        // ----------------------------
         modelBuilder.Entity<BudgetDiaryEntry>()
-        .HasIndex(e => new { e.UserId, e.EntryDate })
-        .IsUnique();
+            .HasIndex(e => new { e.UserId, e.EntryDate })
+            .IsUnique();
 
         modelBuilder.Entity<BudgetDiaryEntry>()
-        .Property(e => e.Saved)
-        .HasComputedColumnSql("[Budget] - [Spent]", stored: true);
+            .Property(e => e.Saved)
+            .HasComputedColumnSql("[Budget] - [Spent]", stored: true);
 
         modelBuilder.Entity<UserModuleProgress>()
-        .HasIndex(x => new { x.UserId, x.ModuleId })
-        .IsUnique();
+            .HasIndex(x => new { x.UserId, x.ModuleId })
+            .IsUnique();
 
         modelBuilder.Entity<UserLessonProgress>()
             .HasIndex(x => new { x.UserId, x.LessonId })
@@ -53,9 +72,7 @@ public class AppDbContext
             .HasIndex(x => new { x.UserId, x.QuizId, x.AttemptedAt });
 
         modelBuilder.Entity<UserVideoProgress>()
-        .HasIndex(x => new { x.UserId, x.VideoId })
-        .IsUnique();
-
+            .HasIndex(x => new { x.UserId, x.VideoId })
+            .IsUnique();
     }
-
 }

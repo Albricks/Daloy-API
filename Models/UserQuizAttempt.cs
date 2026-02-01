@@ -11,8 +11,8 @@ public class UserQuizAttempt
     public int Score { get; set; }
     public int TotalItems { get; set; }
 
-    public decimal Percentage { get; set; }      // ✅ ADD
-    public int AttemptNumber { get; set; }       // ✅ ADD
+    public decimal Percentage { get; set; }
+    public int AttemptNumber { get; set; }
 
     public bool IsPassed { get; set; }
 
@@ -21,5 +21,5 @@ public class UserQuizAttempt
     // Navigation
     public AppUser User { get; set; } = default!;
     public Module Module { get; set; } = default!;
-    public ModuleQuiz ModuleQuiz { get; set; } = default!;
+    public ModuleQuiz Quiz { get; set; } = default!;
 }

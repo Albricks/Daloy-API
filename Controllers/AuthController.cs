@@ -104,6 +104,7 @@ public class AuthController : ControllerBase
     // --------------------
     // LOGIN
     // --------------------
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponse<AuthResponse>>> Login(LoginRequest request)  
     {

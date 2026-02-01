@@ -9,5 +9,6 @@
         public string Duration { get; set; } = null!;
         public string Status { get; set; } = null!;
         public int Progress { get; set; }
+        public int Order { get; set; }
     }
 }

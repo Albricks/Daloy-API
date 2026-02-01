@@ -14,10 +14,15 @@ namespace daloy_api.Services
             _db = db;
         }
 
+        // ============================
+        // LESSON PROGRESS (SOURCE)
+        // ============================
         public async Task UpdateLessonProgressAsync(Guid userId, UpdateLessonProgressDto dto)
         {
             var progress = await _db.UserLessonProgresses
-                .FirstOrDefaultAsync(x => x.UserId == userId && x.LessonId == dto.LessonId);
+                .FirstOrDefaultAsync(x =>
+                    x.UserId == userId &&
+                    x.LessonId == dto.LessonId);
 
             if (progress == null)
             {
@@ -28,30 +33,41 @@ namespace daloy_api.Services
                     ModuleId = dto.ModuleId,
                     LessonId = dto.LessonId,
                     IsStarted = true,
-                    StartedAt = DateTime.UtcNow
+                    StartedAt = DateTime.UtcNow,
+                    LastAccessedAt = DateTime.UtcNow
                 };
 
                 _db.UserLessonProgresses.Add(progress);
             }
 
-            progress.IsCompleted = dto.IsCompleted;
             progress.TimeSpentSeconds += dto.TimeSpentSeconds;
             progress.LastAccessedAt = DateTime.UtcNow;
 
-            if (dto.IsCompleted)
+            if (dto.IsCompleted && !progress.IsCompleted)
             {
+                progress.IsCompleted = true;
                 progress.CompletedAt = DateTime.UtcNow;
             }
 
             await _db.SaveChangesAsync();
 
+            // Lesson drives module progress
             await RecalculateModuleProgressAsync(userId, dto.ModuleId);
         }
 
+        // ============================
+        // QUIZ ATTEMPTS (MODULE-LEVEL)
+        // ============================
         public async Task SubmitQuizAttemptAsync(Guid userId, SubmitQuizAttemptDto dto)
         {
             var attemptCount = await _db.UserQuizAttempts
-                .CountAsync(x => x.UserId == userId && x.QuizId == dto.QuizId);
+                .CountAsync(x =>
+                    x.UserId == userId &&
+                    x.QuizId == dto.QuizId);
+
+            var percentage = dto.TotalItems == 0
+                ? 0
+                : Math.Round((decimal)dto.Score / dto.TotalItems * 100, 2);
 
             var attempt = new UserQuizAttempt
             {
@@ -61,34 +77,36 @@ namespace daloy_api.Services
                 QuizId = dto.QuizId,
                 Score = dto.Score,
                 TotalItems = dto.TotalItems,
-                Percentage = Math.Round((decimal)dto.Score / dto.TotalItems * 100, 2),
+                Percentage = percentage,
                 AttemptNumber = attemptCount + 1,
-                IsPassed = dto.Score >= (int)(dto.TotalItems * 0.7)
+                IsPassed = percentage >= 70
             };
 
             _db.UserQuizAttempts.Add(attempt);
             await _db.SaveChangesAsync();
 
-            // Optional: auto-complete lesson if quiz passed
-            if (attempt.IsPassed)
-            {
-                await RecalculateModuleProgressAsync(userId, dto.ModuleId);
-            }
+            // Quiz affects MODULE only
+            await RecalculateModuleProgressAsync(userId, dto.ModuleId);
         }
 
+        // ============================
+        // MODULE PROGRESS (DERIVED)
+        // ============================
         public async Task RecalculateModuleProgressAsync(Guid userId, Guid moduleId)
         {
-            var totalVideos = await _db.Videos
-                .CountAsync(x => x.LearningModuleId == moduleId);
+            var totalLessons = await _db.Lessons
+                .CountAsync(x => x.ModuleId == moduleId);
 
-            var completedVideos = await _db.UserVideoProgresses
+            var completedLessons = await _db.UserLessonProgresses
                 .CountAsync(x =>
                     x.UserId == userId &&
-                    x.LearningModuleId == moduleId &&
+                    x.ModuleId == moduleId &&
                     x.IsCompleted);
 
             var moduleProgress = await _db.UserModuleProgresses
-                .FirstOrDefaultAsync(x => x.UserId == userId && x.ModuleId == moduleId);
+                .FirstOrDefaultAsync(x =>
+                    x.UserId == userId &&
+                    x.ModuleId == moduleId);
 
             if (moduleProgress == null)
             {
@@ -97,30 +115,40 @@ namespace daloy_api.Services
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     ModuleId = moduleId,
-                    IsStarted = true,
-                    StartedAt = DateTime.UtcNow
+                    Status = ModuleStatus.New,
+                    ProgressPercent = 0,
+                    StartedAt = DateTime.UtcNow,
+                    LastAccessedAt = DateTime.UtcNow
                 };
 
                 _db.UserModuleProgresses.Add(moduleProgress);
             }
 
-            moduleProgress.TotalLessons = totalVideos;       // consider renaming later
-            moduleProgress.CompletedLessons = completedVideos;
-            moduleProgress.ProgressPercent =
-                totalVideos == 0 ? 0 :
-                Math.Round((decimal)completedVideos / totalVideos * 100, 2);
+            var progressPercent = totalLessons == 0
+                ? 0
+                : (int)Math.Round(
+                    (decimal)completedLessons / totalLessons * 100, 0);
 
-            moduleProgress.IsCompleted = completedVideos == totalVideos;
+            moduleProgress.ProgressPercent = progressPercent;
             moduleProgress.LastAccessedAt = DateTime.UtcNow;
 
-            if (moduleProgress.IsCompleted)
+            if (progressPercent == 0)
             {
-                moduleProgress.CompletedAt = DateTime.UtcNow;
+                moduleProgress.Status = ModuleStatus.New;
+                moduleProgress.CompletedAt = null;
+            }
+            else if (progressPercent == 100)
+            {
+                moduleProgress.Status = ModuleStatus.Completed;
+                moduleProgress.CompletedAt ??= DateTime.UtcNow;
+            }
+            else
+            {
+                moduleProgress.Status = ModuleStatus.InProgress;
+                moduleProgress.CompletedAt = null;
             }
 
             await _db.SaveChangesAsync();
         }
-
     }
-
 }
