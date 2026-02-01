@@ -12,11 +12,22 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Console.WriteLine(">>> APP STARTING");
+
 // --------------------
-// DATABASE
+// DATABASE (SAFE)
 // --------------------
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+var dbConn = builder.Configuration.GetConnectionString("Default");
+
+if (!string.IsNullOrEmpty(dbConn))
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(dbConn));
+}
+else
+{
+    Console.WriteLine("⚠️ ConnectionStrings:Default is NOT configured.");
+}
 
 // --------------------
 // IDENTITY
@@ -67,11 +78,10 @@ builder.Services
             ValidAudience = builder.Configuration["Jwt:Audience"],
 
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "")
             )
         };
 
-        // ✅ Do NOT block OPTIONS (CORS preflight)
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -111,16 +121,19 @@ builder.Services.AddCors(options =>
 });
 
 // --------------------
-// AZURE BLOB STORAGE
+// AZURE BLOB STORAGE (SAFE — NO CRASH)
 // --------------------
-var blobConnString = builder.Configuration
-    .GetSection("AzureBlob")["ConnectionString"];
+var blobConnString = builder.Configuration["AzureBlob:ConnectionString"];
 
-if (string.IsNullOrEmpty(blobConnString))
-    throw new Exception("AzureBlob:ConnectionString is not configured.");
-
-builder.Services.AddSingleton(new BlobServiceClient(blobConnString));
-builder.Services.AddSingleton<BlobStorageService>();
+if (!string.IsNullOrEmpty(blobConnString))
+{
+    builder.Services.AddSingleton(new BlobServiceClient(blobConnString));
+    builder.Services.AddSingleton<BlobStorageService>();
+}
+else
+{
+    Console.WriteLine("⚠️ AzureBlob:ConnectionString NOT configured. Blob features disabled.");
+}
 
 // --------------------
 // SERVICES
@@ -167,6 +180,8 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+Console.WriteLine(">>> APP BUILT");
+
 // --------------------
 // MIDDLEWARE (ORDER MATTERS)
 // --------------------
@@ -175,11 +190,12 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
-// ✅ CORS MUST be BEFORE auth
+// ✅ CORS BEFORE AUTH
 app.UseCors("AllowAngular");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
 app.Run();
