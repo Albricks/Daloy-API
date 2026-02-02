@@ -121,7 +121,7 @@ builder.Services.AddCors(options =>
 });
 
 // --------------------
-// AZURE BLOB STORAGE (SAFE — NO CRASH)
+// AZURE BLOB STORAGE (SAFE)
 // --------------------
 var blobConnString = builder.Configuration["AzureBlob:ConnectionString"];
 
@@ -190,8 +190,9 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
-// ✅ CORS BEFORE AUTH
-app.UseCors("AllowAngular");
+app.UseRouting();                
+
+app.UseCors("AllowAngular");      
 
 app.UseAuthentication();
 app.UseAuthorization();
