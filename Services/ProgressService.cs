@@ -17,7 +17,9 @@ namespace daloy_api.Services
         // ============================
         // LESSON PROGRESS (SOURCE)
         // ============================
-        public async Task UpdateLessonProgressAsync(Guid userId, UpdateLessonProgressDto dto)
+        public async Task UpdateLessonProgressAsync(
+            Guid userId,
+            UpdateLessonProgressDto dto)
         {
             var progress = await _db.UserLessonProgresses
                 .FirstOrDefaultAsync(x =>
@@ -33,27 +35,43 @@ namespace daloy_api.Services
                     ModuleId = dto.ModuleId,
                     LessonId = dto.LessonId,
                     IsStarted = true,
-                    StartedAt = DateTime.UtcNow,
-                    LastAccessedAt = DateTime.UtcNow
+                    StartedAt = DateTime.UtcNow
                 };
 
                 _db.UserLessonProgresses.Add(progress);
             }
 
-            progress.TimeSpentSeconds += dto.TimeSpentSeconds;
+            // 🔒 SAFETY GUARDS
+            // --------------------
+
+            // Ignore zero-time updates unless completing
+            if (dto.TimeSpentSeconds <= 0 && !dto.IsCompleted)
+                return;
+
+            // Prevent double completion
+            if (dto.IsCompleted && progress.IsCompleted)
+                return;
+
+            // Add time safely
+            if (dto.TimeSpentSeconds > 0)
+            {
+                progress.TimeSpentSeconds += dto.TimeSpentSeconds;
+            }
+
             progress.LastAccessedAt = DateTime.UtcNow;
 
-            if (dto.IsCompleted && !progress.IsCompleted)
+            if (dto.IsCompleted)
             {
                 progress.IsCompleted = true;
-                progress.CompletedAt = DateTime.UtcNow;
+                progress.CompletedAt ??= DateTime.UtcNow;
             }
 
             await _db.SaveChangesAsync();
 
-            // Lesson drives module progress
+            // 🔑 Recalculate module progress AFTER lesson update
             await RecalculateModuleProgressAsync(userId, dto.ModuleId);
         }
+
 
         // ============================
         // QUIZ ATTEMPTS (MODULE-LEVEL)

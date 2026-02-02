@@ -56,7 +56,7 @@ namespace daloy_api.Controllers
             var userId = /* get from auth context later */ Guid.Empty;
 
             var module = await _db.Modules
-                .OrderBy(m => m.Order)
+                .Where(m => m.Id == id) // ✅ THIS WAS MISSING
                 .Select(m => new ModulePreviewDto
                 {
                     Id = m.Id,
@@ -64,6 +64,7 @@ namespace daloy_api.Controllers
                     Description = m.Description,
                     Level = m.Level,
                     Duration = m.DurationMinutes + " mins",
+
                     Lessons = _db.Lessons.Count(l => l.ModuleId == m.Id),
 
                     Status = _db.UserModuleProgresses
