@@ -56,7 +56,7 @@ namespace daloy_api.Controllers
             var userId = /* get from auth context later */ Guid.Empty;
 
             var module = await _db.Modules
-                .Where(m => m.Id == id) // ✅ THIS WAS MISSING
+                .Where(m => m.Id == id)
                 .Select(m => new ModulePreviewDto
                 {
                     Id = m.Id,
@@ -64,6 +64,7 @@ namespace daloy_api.Controllers
                     Description = m.Description,
                     Level = m.Level,
                     Duration = m.DurationMinutes + " mins",
+                    Order = m.Order,
 
                     Lessons = _db.Lessons.Count(l => l.ModuleId == m.Id),
 
@@ -76,7 +77,20 @@ namespace daloy_api.Controllers
                         .Where(o => o.ModuleId == m.Id)
                         .OrderBy(o => o.Order)
                         .Select(o => o.Text)
-                        .ToList()
+                        .ToList(),
+
+                    // ✅ NEW: Module Preview Standards
+                    PreviewStandard = _db.ModulePreviewStandards
+                        .Where(p => p.ModuleId == m.Id)
+                        .Select(p => new ModulePreviewStandardDto
+                        {
+                            ModuleId = p.ModuleId,
+                            PamantayangPangnilalaman = p.PamantayangPangnilalaman,
+                            PamantayanSaPagganap = p.PamantayanSaPagganap,
+                            MgaKasanayanSaPagkatuto = p.MgaKasanayanSaPagkatuto,
+                            MelcsCode = p.MelcsCode
+                        })
+                        .FirstOrDefault()
                 })
                 .FirstOrDefaultAsync();
 
@@ -85,6 +99,7 @@ namespace daloy_api.Controllers
 
             return Ok(module);
         }
+
 
         // READ PAGE
         [HttpGet("{id:guid}/lessons")]

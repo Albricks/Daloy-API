@@ -8,7 +8,9 @@
         public string Level { get; set; } = null!;
         public string Duration { get; set; } = null!;
         public int Lessons { get; set; }
+        public int Order { get; set; }
         public string Status { get; set; } = null!;
         public List<string> Objectives { get; set; } = new();
+        public ModulePreviewStandardDto? PreviewStandard { get; set; }
     }
 }

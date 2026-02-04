@@ -15,6 +15,7 @@ namespace daloy_api.Models
         public int Order { get; set; }
         public ICollection<ModuleObjective> Objectives { get; set; } = new List<ModuleObjective>();
         public ICollection<Lesson> LessonsList { get; set; } = new List<Lesson>();
+        public ModulePreviewStandard? PreviewStandard { get; set; }
     }
 
     public enum ModuleStatus

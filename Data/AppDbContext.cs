@@ -24,6 +24,7 @@ public class AppDbContext
     public DbSet<ModuleQuiz> ModuleQuizzes { get; set; }
     public DbSet<ModuleQuizQuestion> ModuleQuizQuestions { get; set; }
     public DbSet<ModuleQuizChoice> ModuleQuizChoices { get; set; }
+    public DbSet<ModulePreviewStandard> ModulePreviewStandards { get; set; }
     public DbSet<UserQuizAttempt> UserQuizAttempts { get; set; }
 
     // Other
@@ -74,5 +75,10 @@ public class AppDbContext
         modelBuilder.Entity<UserVideoProgress>()
             .HasIndex(x => new { x.UserId, x.VideoId })
             .IsUnique();
+
+        modelBuilder.Entity<ModulePreviewStandard>()
+            .HasOne(m => m.Module)
+            .WithOne(m => m.PreviewStandard)
+            .HasForeignKey<ModulePreviewStandard>(m => m.ModuleId);
     }
 }
