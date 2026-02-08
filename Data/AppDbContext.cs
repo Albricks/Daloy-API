@@ -30,6 +30,11 @@ public class AppDbContext
     // Other
     public DbSet<ModuleObjective> ModuleObjectives { get; set; }
     public DbSet<BudgetDiaryEntry> BudgetDiaryEntries { get; set; }
+    public DbSet<SituationalActivity> SituationalActivities { get; set; }
+    public DbSet<SituationalQuestion> SituationalQuestions { get; set; }
+    public DbSet<UserSituationalAttempt> UserSituationalAttempts { get; set; }
+    public DbSet<UserSituationalAnswer> UserSituationalAnswers { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -80,5 +85,110 @@ public class AppDbContext
             .HasOne(m => m.Module)
             .WithOne(m => m.PreviewStandard)
             .HasForeignKey<ModulePreviewStandard>(m => m.ModuleId);
+
+        // =========================
+        // SituationalActivity
+        // =========================
+        modelBuilder.Entity<SituationalActivity>(entity =>
+        {
+            entity.ToTable("SituationalActivities");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Title)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.ScenarioText)
+                .IsRequired();
+
+            entity.Property(e => e.MinWordCount)
+                .HasDefaultValue(25);
+
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.ModuleId, e.SortOrder })
+                .IsUnique();
+        });
+
+        // =========================
+        // SituationalQuestion
+        // =========================
+        modelBuilder.Entity<SituationalQuestion>(entity =>
+        {
+            entity.ToTable("SituationalQuestions");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.QuestionText)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.ActivityId, e.SortOrder })
+                .IsUnique();
+
+            entity.HasOne<SituationalActivity>()
+                .WithMany(a => a.Questions)
+                .HasForeignKey(e => e.ActivityId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // =========================
+        // UserSituationalAttempt
+        // =========================
+        modelBuilder.Entity<UserSituationalAttempt>(entity =>
+        {
+            entity.ToTable("UserSituationalAttempts");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.UserId, e.ActivityId })
+                .IsUnique();
+
+            entity.HasOne<SituationalActivity>()
+                .WithMany()
+                .HasForeignKey(e => e.ActivityId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // =========================
+        // UserSituationalAnswer
+        // =========================
+        modelBuilder.Entity<UserSituationalAnswer>(entity =>
+        {
+            entity.ToTable("UserSituationalAnswers");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.AnswerText)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(e => new { e.AttemptId, e.QuestionId })
+                .IsUnique();
+
+            entity.HasOne(e => e.Attempt)
+                .WithMany(a => a.Answers)
+                .HasForeignKey(e => e.AttemptId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // IMPORTANT: NO CASCADE here (avoids multiple cascade paths)
+            entity.HasOne(e => e.Question)
+                .WithMany()
+                .HasForeignKey(e => e.QuestionId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
     }
+
 }
