@@ -164,6 +164,9 @@ public class AuthController : ControllerBase
             avatarUrl = _avatarService.GetAvatarSasUrl(user.AvatarBlobName);
         }
 
+        // ✅ CHECK ADMIN ROLE
+        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
         return Ok(new MeDto
         {
             Id = user.Id,
@@ -171,9 +174,11 @@ public class AuthController : ControllerBase
             Email = user.Email!,
             FullName = user.FullName,
             BirthDate = user.BirthDate,
-            AvatarUrl = avatarUrl
+            AvatarUrl = avatarUrl,
+            IsAdmin = isAdmin
         });
     }
+
 
 
     [HttpPost("refresh")]

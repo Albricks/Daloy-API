@@ -1,4 +1,6 @@
-﻿using daloy_api.Models;
+﻿using daloy_api.DTOs.admin;
+using daloy_api.DTOs.Admin;
+using daloy_api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +36,21 @@ public class AppDbContext
     public DbSet<SituationalQuestion> SituationalQuestions { get; set; }
     public DbSet<UserSituationalAttempt> UserSituationalAttempts { get; set; }
     public DbSet<UserSituationalAnswer> UserSituationalAnswers { get; set; }
+
+    // Admin – read-only projections
+    public DbSet<AdminModuleProgressDto> AdminModuleProgress { get; set; }
+    public DbSet<AdminSituationalSummaryDto> AdminSituationalSummary { get; set; }
+    public DbSet<AdminSituationalAnswerDto> AdminSituationalAnswers { get; set; }
+    public DbSet<AdminQuizSummaryDto> AdminQuizSummary { get; set; }
+    public DbSet<AdminQuizQuestionDto> AdminQuizQuestions { get; set; }
+    public DbSet<AdminVideoProgressDto> AdminVideoProgress { get; set; }
+    public DbSet<AdminVideoCompletionDto> AdminVideoCompletion { get; set; }
+    public DbSet<AdminUserOverallProgressDto> AdminUserOverallProgress { get; set; }
+    public DbSet<AdminUserListDto> AdminUsers { get; set; }
+    public DbSet<AdminKpiDto> AdminDashboardKpis { get; set; }
+
+
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -189,6 +206,21 @@ public class AppDbContext
                 .HasForeignKey(e => e.QuestionId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
+
+        modelBuilder.Entity<AdminModuleProgressDto>().HasNoKey();
+        modelBuilder.Entity<AdminSituationalSummaryDto>().HasNoKey();
+        modelBuilder.Entity<AdminSituationalAnswerDto>().HasNoKey();
+        modelBuilder.Entity<AdminQuizSummaryDto>().HasNoKey();
+        modelBuilder.Entity<AdminQuizQuestionDto>().HasNoKey();
+        modelBuilder.Entity<AdminVideoProgressDto>().HasNoKey();
+        modelBuilder.Entity<AdminVideoCompletionDto>().HasNoKey();
+        modelBuilder.Entity<AdminUserOverallProgressDto>().HasNoKey();
+        modelBuilder.Entity<AdminUserListDto>().HasNoKey();
+        modelBuilder.Entity<AdminKpiDto>().HasNoKey().ToView("vw_Admin_DashboardKpis");
+        modelBuilder.Entity<ChartRowDto>().HasNoKey();
+
+
+
     }
 
 }
