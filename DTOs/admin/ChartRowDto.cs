@@ -3,7 +3,7 @@
     public class ChartRowDto
     {
         public string Label { get; set; } = default!;
-        public int Value { get; set; }
+        public decimal Value { get; set; }
     }
 
 }

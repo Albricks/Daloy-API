@@ -32,11 +32,27 @@ namespace daloy_api.Controllers.Admin
         }
 
         [HttpGet("charts")]
-        public async Task<IActionResult> GetCharts()
+        public async Task<IActionResult> GetCharts(
+            string view = "weekly",
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
         {
+            object from = fromDate ?? (object)DBNull.Value;
+            object to = toDate ?? (object)DBNull.Value;
             var weekly = await _context
                 .Set<ChartRowDto>()
-                .FromSqlRaw("EXEC sp_Admin_GetWeeklyActiveLearners")
+                .FromSqlRaw(
+                    "EXEC sp_Admin_GetWeeklyActiveLearners @ViewType = {0}, @FromDate = {1}, @ToDate = {2}",
+                    view,
+                    from,
+                    to
+                )
+                .AsNoTracking()
+                .ToListAsync();
+
+            var quizAverage = await _context
+                .Set<ChartRowDto>()
+                .FromSqlRaw("EXEC sp_Admin_GetAverageQuizScore")
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -58,6 +74,11 @@ namespace daloy_api.Controllers.Admin
                 {
                     Labels = weekly.Select(x => x.Label).ToList(),
                     Values = weekly.Select(x => x.Value).ToList()
+                },
+                AverageQuizPercentage = new ChartSeriesDto
+                {
+                    Labels = quizAverage.Select(x => x.Label).ToList(),
+                    Values = quizAverage.Select(x => x.Value).ToList()
                 },
                 ModuleCompletionDistribution = new ChartSeriesDto
                 {
