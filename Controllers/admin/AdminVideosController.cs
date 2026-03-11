@@ -53,5 +53,21 @@ namespace daloy_api.Controllers.Admin
 
             return Ok(result);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllVideos()
+        {
+            var videos = await _context.Videos
+                .OrderBy(v => v.Title)
+                .Select(v => new
+                {
+                    id = v.Id,
+                    title = v.Title,
+                    moduleId = v.LearningModuleId
+                })
+                .ToListAsync();
+
+            return Ok(videos);
+        }
     }
 }

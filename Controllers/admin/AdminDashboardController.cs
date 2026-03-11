@@ -24,7 +24,7 @@ namespace daloy_api.Controllers.Admin
         [HttpGet("kpis")]
         public async Task<IActionResult> GetKpis()
         {
-            var kpis = await _context.AdminDashboardKpis    
+            var kpis = await _context.AdminDashboardKpis
                 .AsNoTracking()
                 .FirstAsync();
 
@@ -35,10 +35,15 @@ namespace daloy_api.Controllers.Admin
         public async Task<IActionResult> GetCharts(
             string view = "weekly",
             DateTime? fromDate = null,
-            DateTime? toDate = null)
+            DateTime? toDate = null,
+            Guid? moduleId = null,
+            Guid? videoId = null)
         {
             object from = fromDate ?? (object)DBNull.Value;
             object to = toDate ?? (object)DBNull.Value;
+            object module = moduleId ?? (object)DBNull.Value;
+            object video = videoId ?? (object)DBNull.Value;
+
             var weekly = await _context
                 .Set<ChartRowDto>()
                 .FromSqlRaw(
@@ -58,14 +63,20 @@ namespace daloy_api.Controllers.Admin
 
             var moduleCompletion = await _context
                 .Set<ChartRowDto>()
-                .FromSqlRaw("EXEC sp_Admin_GetModuleCompletionDistribution")
+                .FromSqlRaw(
+                    "EXEC sp_Admin_GetModuleCompletionDistribution @ModuleId = {0}",
+                    module
+                )
                 .AsNoTracking()
                 .ToListAsync();
 
             var videoCompletion = await _context
                 .Set<ChartRowDto>()
-                .FromSqlRaw("EXEC sp_Admin_GetVideoCompletionDistribution")
-                .AsNoTracking()
+                .FromSqlRaw(
+                    "EXEC sp_Admin_GetVideoCompletionDistribution @VideoId = {0}",
+                    video
+                )
+                 .AsNoTracking()
                 .ToListAsync();
 
             return Ok(new AdminDashboardChartsDto
@@ -92,7 +103,5 @@ namespace daloy_api.Controllers.Admin
                 }
             });
         }
-
-
     }
 }
